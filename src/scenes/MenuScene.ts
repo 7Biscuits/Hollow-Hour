@@ -10,10 +10,6 @@ export class MenuScene extends Phaser.Scene {
   private fog1!: Phaser.GameObjects.TileSprite;
   private fog2!: Phaser.GameObjects.TileSprite;
   private titleText!: Phaser.GameObjects.Text;
-  private titleShadow!: Phaser.GameObjects.Text;
-  private windowGlows: Phaser.GameObjects.Image[] = [];
-  private lanternGlows: Phaser.GameObjects.Image[] = [];
-  private particles!: Phaser.GameObjects.Particles.ParticleEmitter;
   private audioManager!: AudioManager;
   private saveManager!: SaveManager;
   private lightningRect!: Phaser.GameObjects.Rectangle;
@@ -45,7 +41,7 @@ export class MenuScene extends Phaser.Scene {
       { x: 435, y: 255 }  // Right wing parlor
     ];
 
-    this.windowGlows = windowPositions.map(pos => {
+    windowPositions.forEach(pos => {
       const glow = this.add.image(pos.x, pos.y, 'window_glow');
       glow.setOrigin(0.5, 0.5);
       glow.setScale(0.5 + Math.random() * 0.2);
@@ -79,7 +75,7 @@ export class MenuScene extends Phaser.Scene {
       { x: 219, y: 270 },
       { x: 419, y: 270 }
     ];
-    this.lanternGlows = lanternPositions.map(pos => {
+    lanternPositions.forEach(pos => {
       const glow = this.add.image(pos.x, pos.y, 'window_glow');
       glow.setScale(0.4);
       glow.setAlpha(0.75);
@@ -103,7 +99,7 @@ export class MenuScene extends Phaser.Scene {
     this.fog2.setBlendMode(Phaser.BlendModes.SCREEN);
 
     // Atmospheric Floating Dust Particles / Spores
-    this.particles = this.add.particles(0, 0, 'particle_dust', {
+    this.add.particles(0, 0, 'particle_dust', {
       x: { min: 0, max: width },
       y: { min: 0, max: height },
       lifespan: 7000,
@@ -202,7 +198,7 @@ export class MenuScene extends Phaser.Scene {
     titleGlow.setTint(0x8a1828);
     titleGlow.setBlendMode(Phaser.BlendModes.ADD);
 
-    this.titleShadow = this.add.text(x + 2, y + 2, 'THE HOLLOW HOUR', {
+    this.add.text(x + 2, y + 2, 'THE HOLLOW HOUR', {
       fontFamily: "'Cinzel Decorative', 'MedievalSharp', serif",
       fontSize: '28px',
       fontStyle: 'bold',

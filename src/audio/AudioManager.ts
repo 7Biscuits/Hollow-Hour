@@ -58,6 +58,7 @@ export class AudioManager {
   public initAudioContext(): void {
     if (!this.ctx) {
       const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
       this.ctx = new AudioContextClass();
 
       // Master Gain
@@ -282,6 +283,13 @@ export class AudioManager {
       } catch {}
     });
     this.droneOscillators = [];
+    if (this.ambientNoiseNode) {
+      try {
+        (this.ambientNoiseNode as any).stop?.();
+        this.ambientNoiseNode.disconnect();
+      } catch {}
+      this.ambientNoiseNode = null;
+    }
   }
 
   // --- UI Sound Effects ---
@@ -436,5 +444,283 @@ export class AudioManager {
 
     noise.start();
     noise.stop(ctx.currentTime + 2.6);
+  }
+
+  /**
+   * Spectral ghost chime / ethereal apparition sound
+   */
+  public playGhostChime(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    // High ethereal bell harmonics (1240Hz & 1860Hz)
+    [1240, 1860, 2480].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.05);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.96, ctx.currentTime + idx * 0.05 + 1.2);
+
+      gain.gain.setValueAtTime(0.001, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08 / (idx + 1), ctx.currentTime + idx * 0.05 + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.05 + 1.4);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(ctx.currentTime + idx * 0.05);
+      osc.stop(ctx.currentTime + idx * 0.05 + 1.5);
+    });
+  }
+
+  /**
+   * Dissonant horror sting for tragic murder discovery
+   */
+  public playHorrorSting(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    // Tritone dissonance cluster
+    [110, 155.56, 220, 311.13].forEach(freq => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.01, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0005, ctx.currentTime + 1.8);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(600, ctx.currentTime);
+      filter.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 1.8);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 1.9);
+    });
+  }
+
+  /**
+   * Guttural predator werewolf growl
+   */
+  public playWerewolfGrowl(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const subOsc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(75, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(55, ctx.currentTime + 0.6);
+
+    subOsc.type = 'triangle';
+    subOsc.frequency.setValueAtTime(45, ctx.currentTime);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(220, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.01, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+
+    osc.connect(filter);
+    subOsc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    subOsc.start();
+    osc.stop(ctx.currentTime + 0.75);
+    subOsc.stop(ctx.currentTime + 0.75);
+  }
+
+  /**
+   * Bloodcurdling wolf howl with upward pitch slide
+   */
+  public playWerewolfHowl(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(380, ctx.currentTime + 0.8);
+    osc.frequency.exponentialRampToValueAtTime(280, ctx.currentTime + 1.8);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(320, ctx.currentTime);
+    filter.Q.setValueAtTime(3, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.01, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 0.4);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.0);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 2.1);
+  }
+
+  /**
+   * Rhythmic heartbeat pulse (thump-thump)
+   */
+  public playHeartbeat(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    [0, 0.16].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(65, ctx.currentTime + delay);
+      osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + delay + 0.1);
+
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.13);
+    });
+  }
+
+  /**
+   * Sharp flesh claw tear / attack strike sound
+   */
+  public playDamageLaceration(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(340, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.15);
+
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  }
+
+  /**
+   * Creaking Victorian floorboard sound
+   */
+  public playFloorboardCreak(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110 + Math.random() * 30, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(140 + Math.random() * 40, ctx.currentTime + 0.12);
+    osc.frequency.linearRampToValueAtTime(90, ctx.currentTime + 0.28);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(320, ctx.currentTime);
+    filter.Q.setValueAtTime(4.0, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.01, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.32);
+  }
+
+  /**
+   * Hollow grandfather clock mechanical tick/tock sound
+   */
+  public playClockTick(isTick: boolean = true): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    const baseFreq = isTick ? 750 : 620;
+    osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, ctx.currentTime + 0.04);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(isTick ? 850 : 700, ctx.currentTime);
+    filter.Q.setValueAtTime(3.0, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.14, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.06);
+  }
+
+  /**
+   * Sub-Cellar crypt echoing water droplet drip
+   */
+  public playWaterDrip(): void {
+    this.initAudioContext();
+    if (!this.ctx || !this.sfxGain) return;
+    const ctx = this.ctx;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    const startFreq = 1200 + Math.random() * 400;
+    osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 1.5, ctx.currentTime + 0.02);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 0.7, ctx.currentTime + 0.09);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.14);
   }
 }

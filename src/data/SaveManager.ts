@@ -1,4 +1,8 @@
 import { SaveData } from '../types';
+import { InventorySystem } from '../systems/InventorySystem';
+import { NotebookSystem } from '../systems/NotebookSystem';
+import { StoryManager } from '../systems/StoryManager';
+import { PuzzleManager } from '../systems/PuzzleSystem';
 
 const SAVE_KEY = 'the_hollow_hour_save_slot_1';
 
@@ -35,14 +39,30 @@ export class SaveManager {
   }
 
   public createSave(custom?: Partial<SaveData>): SaveData {
+    const inventory = InventorySystem.getInstance();
+    const notebook = NotebookSystem.getInstance();
+    const story = StoryManager.getInstance();
+    const puzzleManager = PuzzleManager.getInstance();
+
+    const storyState = story.serialize();
+    const notebookState = notebook.serialize();
+
     const save: SaveData = {
       slot: 1,
-      chapter: 'Chapter I: The Veiled Foyer',
-      location: 'Blackwood Manor - West Wing',
+      chapter: 'Chapter I: The Hollow Hour',
+      location: 'Blackwood Manor - Entrance Hall',
       timestamp: Date.now(),
-      playtimeMinutes: 42,
-      health: 85,
-      inventoryCount: 4,
+      playtimeMinutes: custom?.playtimeMinutes ?? 42,
+      health: custom?.health !== undefined ? custom.health : 85,
+      inventoryCount: inventory.getCount(),
+      inventory: inventory.serialize(),
+      clues: notebookState.clues,
+      suspects: notebookState.suspects,
+      objectives: notebookState.objectives,
+      discoveredRooms: notebookState.discoveredRooms,
+      storyFlags: storyState.flags,
+      unlockedDoors: storyState.unlockedDoors,
+      solvedPuzzles: puzzleManager.serialize(),
       ...custom
     };
 
@@ -53,6 +73,30 @@ export class SaveManager {
     }
 
     return save;
+  }
+
+  public loadSave(): boolean {
+    const save = this.getSave();
+    if (!save) return false;
+
+    if (save.inventory) {
+      InventorySystem.getInstance().deserialize(save.inventory);
+    }
+    NotebookSystem.getInstance().deserialize({
+      clues: save.clues,
+      suspects: save.suspects,
+      objectives: save.objectives,
+      discoveredRooms: save.discoveredRooms
+    });
+    StoryManager.getInstance().deserialize({
+      flags: save.storyFlags,
+      unlockedDoors: save.unlockedDoors
+    });
+    if (save.solvedPuzzles) {
+      PuzzleManager.getInstance().deserialize(save.solvedPuzzles);
+    }
+
+    return true;
   }
 
   public deleteSave(): void {
